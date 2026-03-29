@@ -1,5 +1,5 @@
 // Extension: WebSocketManager.ts
-import { deflate, strFromU8, strToU8, inflate } from 'fflate';
+import { deflateSync, strFromU8, strToU8, inflateSync } from 'fflate';
 
 type MessageType = 'TYPE_DOM_MUTATION' | 'TYPE_CANVAS_SNAPSHOT' | 'TYPE_PING' | 'TYPE_PONG' | 'TYPE_UI_CONFIG' | 'CMD_START_SCREENSHOTS' | 'CMD_STOP_SCREENSHOTS';
 
@@ -62,16 +62,18 @@ export class WebSocketManager {
     }
   }
 
-  private async dispatch(type: MessageType, payload: any, compress: boolean) {
+  private dispatch(type: MessageType, payload: any, compress: boolean) {
     const messageStr = JSON.stringify({ type, sessionId: this.sessionId, payload });
 
     if (compress) {
-      const data = strToU8(messageStr);
-      deflate(data, { level: 6 }, (err, zipped) => {
-        if (!err && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        const zipped = deflateSync(strToU8(messageStr), { level: 6 });
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(zipped);
         }
-      });
+      } catch (err) {
+        console.error('[ThemeEngine] Compression failed:', err);
+      }
     } else {
       this.ws?.send(messageStr);
     }
@@ -91,15 +93,16 @@ export class WebSocketManager {
   }
 
   private handleMessage(event: MessageEvent): void {
-    if (event.data instanceof ArrayBuffer) {
-      inflate(new Uint8Array(event.data), (err, unzipped) => {
-        if (!err) {
-          const str = strFromU8(unzipped);
-          this.processServerMessage(JSON.parse(str));
-        }
-      });
-    } else {
-      this.processServerMessage(JSON.parse(event.data));
+    try {
+      if (event.data instanceof ArrayBuffer) {
+        const unzipped = inflateSync(new Uint8Array(event.data));
+        const str = strFromU8(unzipped);
+        this.processServerMessage(JSON.parse(str));
+      } else {
+        this.processServerMessage(JSON.parse(event.data));
+      }
+    } catch (err) {
+      console.error('[ThemeEngine] Failed to parse message:', err);
     }
   }
 
@@ -111,7 +114,8 @@ export class WebSocketManager {
         if (typeof chrome !== 'undefined') {
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
             if (tabs.length > 0 && tabs[0].id) {
-              chrome.tabs.sendMessage(tabs[0].id, { action: 'UPDATE_THEME', config: msg.payload });
+              chrome.tabs.sendMessage(tabs[0].id, { action: 'UPDATE_THEME', config: msg.payload })
+                .catch(() => { /* tab has no content script listener yet */ });
             }
           });
         }

