@@ -1,0 +1,165 @@
+// Extension: WebSocketManager.ts
+import { deflate, strFromU8, strToU8, inflate } from 'fflate';
+
+type MessageType = 'TYPE_DOM_MUTATION' | 'TYPE_CANVAS_SNAPSHOT' | 'TYPE_PING' | 'TYPE_PONG' | 'TYPE_UI_CONFIG' | 'CMD_START_SCREENSHOTS' | 'CMD_STOP_SCREENSHOTS';
+
+interface ServerMessage {
+  type: MessageType;
+  payload?: any;
+}
+
+interface EnqueuedMessage {
+  type: MessageType;
+  payload: any;
+  compress: boolean;
+}
+
+const WS_URL = 'ws://127.0.0.1:3000/stream';
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_BASE_DELAY = 1000;
+const PING_INTERVAL = 15000;
+
+export class WebSocketManager {
+  private ws: WebSocket | null = null;
+  private reconnectAttempts = 0;
+  private isConnecting = false;
+  private messageQueue: EnqueuedMessage[] = [];
+  private apiKey: string;
+  private sessionId: string;
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private onCommand?: (type: string, payload: any) => void;
+
+  constructor(apiKey: string, onCommand?: (type: string, payload: any) => void) {
+    this.apiKey = apiKey;
+    this.sessionId = crypto.randomUUID(); 
+    this.onCommand = onCommand;
+  }
+
+  public connect(): void {
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) return;
+
+    this.isConnecting = true;
+    
+    const url = new URL(WS_URL);
+    url.searchParams.set('api_key', this.apiKey);
+    url.searchParams.set('session_id', this.sessionId);
+
+    this.ws = new WebSocket(url.toString());
+    this.ws.binaryType = 'arraybuffer';
+
+    this.ws.onopen = this.handleOpen.bind(this);
+    this.ws.onmessage = this.handleMessage.bind(this);
+    this.ws.onclose = this.handleClose.bind(this);
+    this.ws.onerror = this.handleError.bind(this);
+  }
+
+  public send(type: MessageType, payload: any, compress = false): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.dispatch(type, payload, compress);
+    } else {
+      this.messageQueue.push({ type, payload, compress });
+      this.connect();
+    }
+  }
+
+  private async dispatch(type: MessageType, payload: any, compress: boolean) {
+    const messageStr = JSON.stringify({ type, sessionId: this.sessionId, payload });
+
+    if (compress) {
+      const data = strToU8(messageStr);
+      deflate(data, { level: 6 }, (err, zipped) => {
+        if (!err && this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(zipped);
+        }
+      });
+    } else {
+      this.ws?.send(messageStr);
+    }
+  }
+
+  private handleOpen(): void {
+    this.isConnecting = false;
+    this.reconnectAttempts = 0;
+    console.log('[ThemeEngine] Sync Server Connected.');
+
+    this.startHeartbeat();
+
+    while (this.messageQueue.length > 0) {
+      const msg = this.messageQueue.shift();
+      if (msg) this.dispatch(msg.type, msg.payload, msg.compress);
+    }
+  }
+
+  private handleMessage(event: MessageEvent): void {
+    if (event.data instanceof ArrayBuffer) {
+      inflate(new Uint8Array(event.data), (err, unzipped) => {
+        if (!err) {
+          const str = strFromU8(unzipped);
+          this.processServerMessage(JSON.parse(str));
+        }
+      });
+    } else {
+      this.processServerMessage(JSON.parse(event.data));
+    }
+  }
+
+  private processServerMessage(msg: ServerMessage) {
+    switch (msg.type) {
+      case 'TYPE_PONG':
+        break;
+      case 'TYPE_UI_CONFIG':
+        if (typeof chrome !== 'undefined') {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
+            if (tabs.length > 0 && tabs[0].id) {
+              chrome.tabs.sendMessage(tabs[0].id, { action: 'UPDATE_THEME', config: msg.payload });
+            }
+          });
+        }
+        break;
+      case 'CMD_START_SCREENSHOTS':
+      case 'CMD_STOP_SCREENSHOTS':
+        if (this.onCommand) this.onCommand(msg.type, msg.payload);
+        break;
+      default:
+        console.warn('[ThemeEngine] Unknown command from config server:', msg.type);
+    }
+  }
+
+  private handleClose(event: CloseEvent): void {
+    this.isConnecting = false;
+    this.ws = null;
+    this.stopHeartbeat();
+    console.log(`[ThemeEngine] Disconnected. Code: ${event.code}`);
+    this.attemptReconnect();
+  }
+
+  private handleError(event: Event): void {
+    console.error('[ThemeEngine] Connection Error');
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.error('[ThemeEngine] Max connection attempts reached. Pausing sync.');
+      return;
+    }
+
+    const delay = RECONNECT_BASE_DELAY * Math.pow(2, this.reconnectAttempts);
+    this.reconnectAttempts++;
+    console.log(`[ThemeEngine] Reconnecting in ${delay}ms...`);
+    setTimeout(() => this.connect(), delay);
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.pingTimer = setInterval(() => {
+      this.send('TYPE_PING', { timestamp: Date.now() });
+    }, PING_INTERVAL);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
+    }
+  }
+}
