@@ -1,28 +1,46 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
+const logger = require('./logger');
 
-// Ensure directories exist
 const snapshotsDir = path.resolve(process.cwd(), config.STORAGE_DIR, 'snapshots');
 if (!fs.existsSync(snapshotsDir)) fs.mkdirSync(snapshotsDir, { recursive: true });
 
 function saveCanvasSnapshot(sessionId, payload) {
-  // Payload should contain { filename, data: <base64 or binary buffer> }
-  // Assuming payload.data is a base64 string for simplicity, or binary buffer.
   const timestamp = Date.now();
-  const filename = \`\${sessionId}_\${timestamp}.webp\`;
+
+  // Detect actual image format from the data URL header
+  let ext = 'jpg';
+  if (typeof payload === 'string') {
+    const match = payload.match(/^data:image\/(\w+);/);
+    if (match) ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+  } else if (payload && typeof payload === 'object' && typeof payload.data === 'string') {
+    const match = payload.data.match(/^data:image\/(\w+);/);
+    if (match) ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+  }
+
+  const filename = `${sessionId}_${timestamp}.${ext}`;
   const filePath = path.join(snapshotsDir, filename);
 
-  // If payload is base64
-  if (typeof payload === 'string' && payload.startsWith('data:image')) {
-    const base64Data = payload.replace(/^data:image\/\\w+;base64,/, '');
+  // Normalize: support both raw data and { data: ... } object payloads
+  let data = payload;
+  if (payload && typeof payload === 'object' && !Buffer.isBuffer(payload) && payload.data) {
+    data = payload.data;
+  }
+
+  if (typeof data === 'string' && data.startsWith('data:image')) {
+    const base64Data = data.replace(/^data:image\/\w+;base64,/, '');
     fs.writeFile(filePath, base64Data, { encoding: 'base64' }, (err) => {
-      if (err) console.error('[Storage] Error saving canvas snapshot', err);
+      if (err) logger.error({ err, filePath }, 'Error saving canvas snapshot');
+      else logger.info({ filePath, sessionId }, 'Saved canvas snapshot');
     });
-  } else if (Buffer.isBuffer(payload)) {
-    fs.writeFile(filePath, payload, (err) => {
-      if (err) console.error('[Storage] Error saving canvas snapshot buffer', err);
+  } else if (Buffer.isBuffer(data)) {
+    fs.writeFile(filePath, data, (err) => {
+      if (err) logger.error({ err, filePath }, 'Error saving canvas snapshot buffer');
+      else logger.info({ filePath, sessionId }, 'Saved canvas snapshot');
     });
+  } else {
+    logger.warn({ sessionId, payloadType: typeof data }, 'Unhandled snapshot payload format');
   }
 }
 

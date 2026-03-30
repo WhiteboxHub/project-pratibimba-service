@@ -5,10 +5,12 @@
   "description": "Seamlessly customize the UI of supported websites with high-performance CSS themes.",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "tabs",
+    "activeTab"
   ],
-  "host_permissions": [
-    "*://*/*"
+  "optional_host_permissions": [
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js",
@@ -25,6 +27,22 @@
   "action": {
     "default_popup": "popup/index.html",
     "default_title": "Theme Config"
+  },
+  "commands": {
+    "start-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+6",
+        "mac": "Command+Shift+6"
+      },
+      "description": "Start screenshot capture"
+    },
+    "stop-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+7",
+        "mac": "Command+Shift+7"
+      },
+      "description": "Stop screenshot capture"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",
