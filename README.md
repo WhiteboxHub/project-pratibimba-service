@@ -183,7 +183,7 @@ Open **http://localhost:3000/snapshots** in your browser to see a live gallery o
 
 Because the Fastify server listens on `0.0.0.0`, you can view the live screenshot gallery from any device on the same local network without writing any extra code!
 
-1. Find the IP Address of the PC running the server (e.g., run `ipconfig` in PowerShell and look for the IPv4 Address, like `192.168.0.108`).
+1. Find the IP Address of the PC running the server (e.g., run `ipconfig` in PowerShell and look for the IPv4 Address, like `192.168.0.108`). Also set the wifi connection on PC to private network
 2. **If you are on Windows, you must allow Port 3000 through the Firewall**:
    - Open PowerShell **as Administrator**.
    - Run: `New-NetFirewallRule -DisplayName "Allow Node Port 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow`
