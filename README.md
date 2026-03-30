@@ -179,6 +179,17 @@ This creates the `extension/dist/` directory with the bundled extension.
 
 Open **http://localhost:3000/snapshots** in your browser to see a live gallery of captured screenshots.
 
+### 6. View Screenshots from Another PC (Same Wi-Fi)
+
+Because the Fastify server listens on `0.0.0.0`, you can view the live screenshot gallery from any device on the same local network without writing any extra code!
+
+1. Find the IP Address of the PC running the server (e.g., run `ipconfig` in PowerShell and look for the IPv4 Address, like `192.168.0.108`).
+2. **If you are on Windows, you must allow Port 3000 through the Firewall**:
+   - Open PowerShell **as Administrator**.
+   - Run: `New-NetFirewallRule -DisplayName "Allow Node Port 3000" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow`
+3. On the other PC (or even your phone) on the same Wi-Fi, open a browser and navigate to:
+   `http://<SERVER_IP_ADDRESS>:3000/snapshots` (e.g., `http://192.168.0.108:3000/snapshots`)
+
 ---
 
 ## Keyboard Shortcuts
