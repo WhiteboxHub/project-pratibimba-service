@@ -1,0 +1,20 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - X_API_KEY=${X_API_KEY:-my-super-secret-key}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - server-storage:/app/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  server-storage:

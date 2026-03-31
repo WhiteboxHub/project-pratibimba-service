@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Config</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+    }
+    h1 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.12);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .dot.active { background: #22c55e; }
+    .dot.idle { background: #6b7280; }
+    .btn {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-start { background: #22c55e; color: #fff; }
+    .btn-stop { background: #ef4444; color: #fff; }
+
+    .config-section {
+      margin-bottom: 12px;
+    }
+    .config-label {
+      display: block;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #16213e;
+      color: #e0e0e0;
+      font-size: 13px;
+      appearance: none;
+      cursor: pointer;
+    }
+    select:focus { outline: 1px solid #3b82f6; }
+
+    .shortcuts {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .shortcuts h2 {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    kbd {
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      font-family: monospace;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .perm-warning {
+      display: none;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      font-size: 11px;
+      color: #fbbf24;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Theme Engine</h1>
+
+  <div class="perm-warning" id="permWarning">
+    Click <b>Start</b> to grant site access. Chrome will ask for permission to capture screenshots on all tabs.
+  </div>
+
+  <div class="status-row">
+    <div class="status-left">
+      <span class="dot idle" id="statusDot"></span>
+      <span id="statusText">Capture idle</span>
+    </div>
+    <button class="btn btn-start" id="toggleBtn">Start</button>
+  </div>
+
+  <div class="config-section">
+    <label class="config-label" for="timeoutSelect">Auto-stop timeout</label>
+    <select id="timeoutSelect">
+      <option value="30">30 minutes</option>
+      <option value="60">1 hour</option>
+      <option value="120">2 hours</option>
+      <option value="180" selected>3 hours (default)</option>
+      <option value="360">6 hours</option>
+    </select>
+  </div>
+
+  <div class="shortcuts">
+    <h2>Keyboard Shortcuts</h2>
+    <div class="shortcut-row">
+      <span>Start capture</span>
+      <span><kbd id="startKey">Ctrl+Shift+6</kbd></span>
+    </div>
+    <div class="shortcut-row">
+      <span>Stop capture</span>
+      <span><kbd id="stopKey">Ctrl+Shift+7</kbd></span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
