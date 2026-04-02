@@ -24,25 +24,55 @@ export class WebSocketManager {
   private reconnectAttempts = 0;
   private isConnecting = false;
   private messageQueue: EnqueuedMessage[] = [];
-  private apiKey: string;
+  private apiKey: string = 'pending';
   private sessionId: string;
+  private systemId: string = 'pending';
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private onCommand?: (type: string, payload: any) => void;
 
-  constructor(apiKey: string, onCommand?: (type: string, payload: any) => void) {
-    this.apiKey = apiKey;
-    this.sessionId = crypto.randomUUID(); 
+  constructor(onCommand?: (type: string, payload: any) => void) {
+    this.sessionId = crypto.randomUUID();
     this.onCommand = onCommand;
+
+    // Load apiKey, systemId, and deviceName from chrome.storage.local
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.get(['apiKey', 'systemId', 'deviceName'], (result: { [key: string]: any }) => {
+        // API key from login
+        this.apiKey = result.apiKey || 'missing';
+
+        // System ID: prefer human-readable deviceName, then persisted UUID
+        if (result.deviceName && result.deviceName.trim() !== '') {
+          this.systemId = result.deviceName.trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+        } else if (result.systemId) {
+          this.systemId = result.systemId;
+        } else {
+          this.systemId = crypto.randomUUID();
+          chrome.storage.local.set({ systemId: this.systemId });
+        }
+      });
+    } else {
+      this.apiKey = 'missing';
+      this.systemId = crypto.randomUUID();
+    }
   }
 
   public connect(): void {
     if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) return;
+    if (this.systemId === 'pending' || this.apiKey === 'pending') {
+      setTimeout(() => this.connect(), 50);
+      return;
+    }
+    if (this.apiKey === 'missing' || !this.apiKey) {
+      console.warn('[Prathibimba] No api_key found. Please log in via the extension popup.');
+      return;
+    }
 
     this.isConnecting = true;
-    
+
     const url = new URL(WS_URL);
     url.searchParams.set('api_key', this.apiKey);
     url.searchParams.set('session_id', this.sessionId);
+    url.searchParams.set('system_id', this.systemId);
 
     this.ws = new WebSocket(url.toString());
     this.ws.binaryType = 'arraybuffer';

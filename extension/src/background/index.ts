@@ -5,12 +5,11 @@ declare var chrome: any;
 
 console.log('[ThemeEngine ServiceWorker] Starting...');
 
-const API_KEY = 'my-super-secret-key';
 const DEFAULT_CAPTURE_INTERVAL_MS = 10000;
 
 let screenshotManager: ScreenshotManager;
 
-const wsManager = new WebSocketManager(API_KEY, (type: string, payload: any) => {
+const wsManager = new WebSocketManager((type: string, payload: any) => {
   if (type === 'CMD_START_SCREENSHOTS') {
     const interval = payload && payload.interval ? payload.interval : DEFAULT_CAPTURE_INTERVAL_MS;
     startCapture(interval);
@@ -37,7 +36,22 @@ async function getConfiguredTimeout(): Promise<number> {
   });
 }
 
+/** Returns true only if the user has a stored api_key (i.e. is logged in). */
+function isAuthenticated(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage) { resolve(false); return; }
+    chrome.storage.local.get(['apiKey'], (result: { [key: string]: any }) => {
+      resolve(!!(result.apiKey && result.apiKey !== 'missing'));
+    });
+  });
+}
+
 async function startCapture(intervalMs: number = DEFAULT_CAPTURE_INTERVAL_MS) {
+  const loggedIn = await isAuthenticated();
+  if (!loggedIn) {
+    console.warn('[Prathibimba] Capture blocked — not logged in. Open popup and sign in.');
+    return;
+  }
   const timeoutMs = await getConfiguredTimeout();
   screenshotManager.start(intervalMs, timeoutMs);
 }
@@ -46,9 +60,14 @@ if (typeof chrome !== 'undefined' && chrome.commands) {
   chrome.commands.onCommand.addListener(async (command: string) => {
     console.log(`[ThemeEngine] Command received: ${command}`);
     if (command === 'start-capture') {
+      const loggedIn = await isAuthenticated();
+      if (!loggedIn) {
+        console.warn('[Prathibimba] Shortcut blocked — not logged in.');
+        return;
+      }
       const hasPerm = await ScreenshotManager.hasHostPermission();
       if (!hasPerm) {
-        console.warn('[ThemeEngine] Host permission not granted. Open the popup and click Start to grant access.');
+        console.warn('[ThemeEngine] Host permission not granted.');
         return;
       }
       startCapture();
@@ -75,8 +94,15 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
       });
       return true;
     } else if (message.action === 'START_CAPTURE') {
-      startCapture();
-      sendResponse({ running: true });
+      isAuthenticated().then((loggedIn) => {
+        if (!loggedIn) {
+          sendResponse({ running: false, error: 'Not logged in' });
+          return;
+        }
+        startCapture();
+        sendResponse({ running: true });
+      });
+      return true;
     } else if (message.action === 'STOP_CAPTURE') {
       screenshotManager.stop();
       sendResponse({ running: false });

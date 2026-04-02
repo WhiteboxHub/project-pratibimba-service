@@ -1,14 +1,19 @@
 services:
   server:
     build: ./server
-    ports:
-      - "3000:3000"
     environment:
       - PORT=3000
       - X_API_KEY=${X_API_KEY:-my-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT:-3306}
+      - STORAGE_DIR=/app/storage
     volumes:
       - server-storage:/app/storage
+      - ./server/buffer.db:/app/buffer.db
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
@@ -16,5 +21,20 @@ services:
       timeout: 5s
       retries: 3
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
+    command: caddy reverse-proxy --from https://$${DOMAIN_NAME} --to http://server:3000
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   server-storage:
+  caddy_data:
+  caddy_config:
