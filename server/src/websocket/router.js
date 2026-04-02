@@ -6,7 +6,7 @@ const { saveCanvasSnapshot } = require('../utils/storage');
  * Message Router
  * Differentiates strictly between payload types and routes appropriately.
  */
-function routeMessage(ws, sessionManager, sessionId, message) {
+function routeMessage(ws, sessionManager, sessionId, message, systemId) {
   const { type, payload } = message;
 
   switch (type) {
@@ -22,7 +22,7 @@ function routeMessage(ws, sessionManager, sessionId, message) {
 
     case 'TYPE_CANVAS_SNAPSHOT':
       sessionManager.updateLastSeen(sessionId);
-      saveCanvasSnapshot(sessionId, payload);
+      saveCanvasSnapshot(sessionId, payload, systemId);
       break;
 
     default:

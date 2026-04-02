@@ -39,6 +39,10 @@ export class ScreenshotManager {
       chrome.alarms.create(CAPTURE_TIMEOUT_ALARM, { delayInMinutes: timeoutMs / 60000 });
       console.log(`[ScreenshotManager] Auto-timeout alarm set for ${timeoutMs / 60000} minutes`);
     }
+
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: 'CAPTURE_STATUS_CHANGED', running: true }).catch(() => {});
+    }
   }
 
   public stop(): void {
@@ -50,6 +54,10 @@ export class ScreenshotManager {
 
     if (typeof chrome !== 'undefined' && chrome.alarms) {
       chrome.alarms.clear(CAPTURE_TIMEOUT_ALARM);
+    }
+    
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: 'CAPTURE_STATUS_CHANGED', running: false }).catch(() => {});
     }
   }
 

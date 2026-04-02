@@ -36,7 +36,7 @@ describe('routeMessage', () => {
 
   it('handles TYPE_DOM_MUTATION by recording', () => {
     const payload = { html: '<div>test</div>' };
-    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_DOM_MUTATION', payload });
+    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_DOM_MUTATION', payload }, 'sys-1');
 
     expect(mockSessionManager.updateLastSeen).toHaveBeenCalledWith('sess-1');
     expect(recordDomMutation).toHaveBeenCalledWith('sess-1', payload);
@@ -44,14 +44,14 @@ describe('routeMessage', () => {
 
   it('handles TYPE_CANVAS_SNAPSHOT by saving', () => {
     const payload = 'data:image/jpeg;base64,abc123';
-    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_CANVAS_SNAPSHOT', payload });
+    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_CANVAS_SNAPSHOT', payload }, 'sys-1');
 
     expect(mockSessionManager.updateLastSeen).toHaveBeenCalledWith('sess-1');
-    expect(saveCanvasSnapshot).toHaveBeenCalledWith('sess-1', payload);
+    expect(saveCanvasSnapshot).toHaveBeenCalledWith('sess-1', payload, 'sys-1');
   });
 
   it('logs warning for unknown message type', () => {
-    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_UNKNOWN' });
+    routeMessage(mockWs, mockSessionManager, 'sess-1', { type: 'TYPE_UNKNOWN' }, 'sys-1');
 
     expect(logger.warn).toHaveBeenCalled();
     expect(mockWs.send).not.toHaveBeenCalled();

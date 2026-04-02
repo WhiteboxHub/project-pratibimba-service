@@ -4,29 +4,38 @@ node_modules/
 # Environment & secrets
 .env
 .envrc
+!.env.example
 
 # Extension build output
 extension/dist/
 
 # Server runtime data
-server/buffer.db
-server/buffer.db-journal
+server/buffer.db*
 server/storage/
+server/snapshots/
+*.jsonl
 
 # Logs
 *.log
 npm-debug.log
 yarn-error.log
 
+# Project-specific automation
+.gemini/
+.antigravity/
+
 # OS files
 .DS_Store
 Thumbs.db
 *.swp
 *~
+desktop.ini
 
 # IDE
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 
 # Test / coverage
 coverage/
@@ -35,3 +44,5 @@ coverage/
 # Cursor
 .cursorignore
 .cursorindexingignore
+
+deployment_guide.md
