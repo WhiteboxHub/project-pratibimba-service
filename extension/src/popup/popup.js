@@ -1,9 +1,9 @@
 // The server URL — update this to your GCP VM domain before deploying
-const SERVER_BASE_URL = 'http://127.0.0.1:3000';
+const SERVER_BASE_URL = 'http://136.119.160.29';
 
 // ---- DOM refs ----
 const loginPanel = document.getElementById('loginPanel');
-const mainPanel = document.getElementById('mainPanel');
+const mainPanel = document.getElementById('mainPanel'); 
 const loginUname = document.getElementById('loginUname');
 const loginPass = document.getElementById('loginPass');
 const loginBtn = document.getElementById('loginBtn');

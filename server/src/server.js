@@ -114,13 +114,13 @@ fastify.get('/snapshots', { preHandler: requireSession }, async (request, reply)
       const dateStr = s.startTime ? new Date(s.startTime).toLocaleString(undefined, {
         month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
       }) : 'Unknown Time';
-      
+
       return `<a class="card folder" href="/snapshots?system=${system}&session=${s.id}">
         📆 ${dateStr}
-        <span class="sub">${s.id.substring(0,8)}... (${s.count} photos)</span>
+        <span class="sub">${s.id.substring(0, 8)}... (${s.count} photos)</span>
       </a>`;
     }).join('');
-    
+
     return reply.type('text/html').send(`
       <!DOCTYPE html><html><head><meta charset="UTF-8"><title>${system} - Sessions</title>${styleHTML}</head><body>
       <h1>Device: ${system}</h1>
@@ -168,7 +168,7 @@ fastify.get('/snapshots', { preHandler: requireSession }, async (request, reply)
 // Serve individual nested snapshot files
 fastify.get('/snapshots/:system/:session/:filename', { preHandler: requireSession }, async (request, reply) => {
   const { system, session, filename } = request.params;
-  
+
   if (/[\\/\\\\]/.test(filename) || system.includes('..') || session.includes('..')) {
     return reply.code(400).send({ error: 'Invalid path' });
   }
@@ -180,7 +180,7 @@ fastify.get('/snapshots/:system/:session/:filename', { preHandler: requireSessio
 
   const ext = path.extname(filename).toLowerCase();
   const mimeTypes = { '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
-  
+
   reply.header('Cache-Control', 'public, max-age=31536000');
   const stream = fs.createReadStream(filePath);
   return reply.type(mimeTypes[ext] || 'application/octet-stream').send(stream);
@@ -211,13 +211,13 @@ const start = async () => {
 
       // 2. Delete .jsonl buffer dump files older than 1 day
       const storageDir = path.resolve(process.cwd(), config.STORAGE_DIR);
-      const yesterday  = Date.now() - 24 * 60 * 60 * 1000;
+      const yesterday = Date.now() - 24 * 60 * 60 * 1000;
       fs.readdir(storageDir, (err, files) => {
         if (err) return;
         files.filter(f => f.endsWith('.jsonl')).forEach(f => {
           const fp = path.join(storageDir, f);
           fs.stat(fp, (e, s) => {
-            if (!e && s.mtimeMs < yesterday) fs.unlink(fp, () => {});
+            if (!e && s.mtimeMs < yesterday) fs.unlink(fp, () => { });
           });
         });
       });
