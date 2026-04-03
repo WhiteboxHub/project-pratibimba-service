@@ -29,7 +29,7 @@ services:
       - "443:443"
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
-    command: caddy reverse-proxy --from https://$${DOMAIN_NAME} --to http://server:3000
+    command: caddy reverse-proxy --from https://${DOMAIN_NAME:-localhost} --to http://server:3000
     volumes:
       - caddy_data:/data
       - caddy_config:/config
