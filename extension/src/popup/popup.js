@@ -1,5 +1,5 @@
 // The server URL — update this to your GCP VM domain before deploying
-const SERVER_BASE_URL = 'http://127.0.0.1:3000';
+const SERVER_BASE_URL = 'https://WBL-Screenshots.com';
 
 // ---- DOM refs ----
 const loginPanel = document.getElementById('loginPanel');

@@ -14,7 +14,7 @@ interface EnqueuedMessage {
   compress: boolean;
 }
 
-const WS_URL = 'ws://127.0.0.1:3000/stream';
+const WS_URL = 'wss://WBL-Screenshots.com/stream';
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_BASE_DELAY = 1000;
 const PING_INTERVAL = 15000;
