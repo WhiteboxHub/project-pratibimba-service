@@ -42,9 +42,9 @@ async function registerExtensionAuthRoute(fastify) {
     }
 
     // Check account expiry (null / zero-date means no expiry)
-    if (user.enddate && String(user.enddate) !== '0000-00-00' && new Date(user.enddate) < new Date()) {
-      return reply.code(403).send({ error: 'Account expired. Contact your administrator.' });
-    }
+    // if (user.enddate && String(user.enddate) !== '0000-00-00' && new Date(user.enddate) < new Date()) {
+    //   return reply.code(403).send({ error: 'Account expired. Contact your administrator.' });
+    // }
 
     // 2. Confirm this uname belongs to an active employee
     //    Tries: exact email match, prefix match (uname@anything), or uname contains @
@@ -59,7 +59,7 @@ async function registerExtensionAuthRoute(fastify) {
     const employee = empRows[0];
 
     // If you want hard enforcement, uncomment below:
-    // if (!employee) return reply.code(403).send({ error: 'No active employee record found for this account.' });
+    if (!employee) return reply.code(403).send({ error: 'No active employee record found for this account.' });
     const employeeName = employee ? employee.name : unameClean;
 
     // 3. Ensure extension_keys table has expires_at column (safe migration)

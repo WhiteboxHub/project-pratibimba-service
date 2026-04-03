@@ -174,11 +174,11 @@ function registerAuthRoutes(fastify) {
     }
 
     // Check account expiry — only block if enddate is set AND in the past
-    if (user.enddate && new Date(user.enddate) < new Date()) {
-      return reply.type('text/html').send(
-        LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Account expired. Contact your administrator.</div>')
-      );
-    }
+    // if (user.enddate && new Date(user.enddate) < new Date()) {
+    //   return reply.type('text/html').send(
+    //     LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Account expired. Contact your administrator.</div>')
+    //   );
+    // }
 
     // Cache user locally so session lookups don't need MySQL
     db.prepare('INSERT OR REPLACE INTO authuser_cache (mysql_id, uname) VALUES (?, ?)').run(user.id, user.uname);
