@@ -14,6 +14,7 @@ const dot = document.getElementById('statusDot');
 const text = document.getElementById('statusText');
 const btn = document.getElementById('toggleBtn');
 const timeoutSelect = document.getElementById('timeoutSelect');
+const intervalSelect = document.getElementById('intervalSelect');
 const deviceNameInput = document.getElementById('deviceName');
 const startKeyEl = document.getElementById('startKey');
 const stopKeyEl = document.getElementById('stopKey');
@@ -73,7 +74,7 @@ async function requestHostPermission() {
 }
 
 // ---- On load: check if already signed in ----
-chrome.storage.local.get(['apiKey', 'uname', 'deviceName', 'captureTimeoutMinutes'], result => {
+chrome.storage.local.get(['apiKey', 'uname', 'deviceName', 'captureTimeoutMinutes', 'captureIntervalMs'], result => {
   if (result.apiKey && result.uname) {
     showMainPanel(result.uname);
     checkHostPermission();
@@ -82,6 +83,7 @@ chrome.storage.local.get(['apiKey', 'uname', 'deviceName', 'captureTimeoutMinute
     });
     if (result.deviceName) deviceNameInput.value = result.deviceName;
     if (result.captureTimeoutMinutes) timeoutSelect.value = String(result.captureTimeoutMinutes);
+    if (result.captureIntervalMs) intervalSelect.value = String(result.captureIntervalMs);
   } else {
     showLoginPanel();
   }
@@ -181,6 +183,10 @@ deviceNameInput.addEventListener('change', () => {
 
 timeoutSelect.addEventListener('change', () => {
   chrome.storage.local.set({ captureTimeoutMinutes: parseInt(timeoutSelect.value, 10) });
+});
+
+intervalSelect.addEventListener('change', () => {
+  chrome.storage.local.set({ captureIntervalMs: parseInt(intervalSelect.value, 10) });
 });
 
 // ---- Real-time State Updates ----

@@ -11,8 +11,7 @@ let screenshotManager: ScreenshotManager;
 
 const wsManager = new WebSocketManager((type: string, payload: any) => {
   if (type === 'CMD_START_SCREENSHOTS') {
-    const interval = payload && payload.interval ? payload.interval : DEFAULT_CAPTURE_INTERVAL_MS;
-    startCapture(interval);
+    startCapture(payload?.interval);
   } else if (type === 'CMD_STOP_SCREENSHOTS') {
     screenshotManager.stop();
   }
@@ -46,14 +45,31 @@ function isAuthenticated(): Promise<boolean> {
   });
 }
 
-async function startCapture(intervalMs: number = DEFAULT_CAPTURE_INTERVAL_MS) {
+async function getConfiguredInterval(): Promise<number> {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage) {
+      resolve(DEFAULT_CAPTURE_INTERVAL_MS);
+      return;
+    }
+    chrome.storage.local.get('captureIntervalMs', (result: any) => {
+      if (result.captureIntervalMs && result.captureIntervalMs > 0) {
+        resolve(result.captureIntervalMs);
+      } else {
+        resolve(DEFAULT_CAPTURE_INTERVAL_MS);
+      }
+    });
+  });
+}
+
+async function startCapture(serverIntervalMs?: number) {
   const loggedIn = await isAuthenticated();
   if (!loggedIn) {
     console.warn('[Prathibimba] Capture blocked — not logged in. Open popup and sign in.');
     return;
   }
   const timeoutMs = await getConfiguredTimeout();
-  screenshotManager.start(intervalMs, timeoutMs);
+  const definedInterval = (serverIntervalMs && serverIntervalMs > 0) ? serverIntervalMs : (await getConfiguredInterval());
+  screenshotManager.start(definedInterval, timeoutMs);
 }
 
 if (typeof chrome !== 'undefined' && chrome.commands) {
