@@ -156,7 +156,7 @@ function registerAuthRoutes(fastify) {
     try {
       const mysqlDb = getPool();
       const [rows] = await mysqlDb.execute(
-        'SELECT id, uname, passwd, status, enddate FROM authuser WHERE uname = ? LIMIT 1',
+        'SELECT id, uname, passwd, status, enddate, role FROM authuser WHERE uname = ? LIMIT 1',
         [username.trim()]
       );
       user = rows[0] || null;
@@ -170,6 +170,13 @@ function registerAuthRoutes(fastify) {
     if (!user || user.passwd !== md5(password)) {
       return reply.type('text/html').send(
         LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Invalid username or password.</div>')
+      );
+    }
+
+    // Enforce Admin-only access for the Dashboard
+    if (user.role !== 'admin') {
+      return reply.type('text/html').send(
+        LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Access denied. Only Admins can view the dashboard.</div>')
       );
     }
 
