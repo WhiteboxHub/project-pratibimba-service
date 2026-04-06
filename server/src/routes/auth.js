@@ -173,10 +173,19 @@ function registerAuthRoutes(fastify) {
       );
     }
 
-    // Enforce Admin-only access for the Dashboard
-    if (user.role !== 'admin') {
+    // Enforce Employee-only access for the Dashboard
+    const unameClean = username.trim();
+    const [empRows] = await mysqlDb.execute(
+      `SELECT id, name, email FROM employee
+       WHERE (email = ? OR email LIKE CONCAT(?, '@%') OR CONCAT(?, '@%') LIKE CONCAT(email, '%'))
+         AND status = 1
+       LIMIT 1`,
+      [unameClean, unameClean, unameClean]
+    );
+
+    if (!empRows[0]) {
       return reply.type('text/html').send(
-        LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Access denied. Only Admins can view the dashboard.</div>')
+        LOGIN_PAGE.replace('{{ERROR}}', '<div class="error">Access denied. No active employee record found for this account.</div>')
       );
     }
 
