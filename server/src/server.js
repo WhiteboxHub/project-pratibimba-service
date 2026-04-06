@@ -111,8 +111,8 @@ fastify.get('/snapshots', { preHandler: requireSession }, async (request, reply)
     sessions.sort((a, b) => b.startTime - a.startTime);
 
     const cards = sessions.map(s => {
-      const dateStr = s.startTime ? new Date(s.startTime).toLocaleString(undefined, {
-        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+      const dateStr = s.startTime ? new Date(s.startTime).toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
       }) : 'Unknown Time';
 
       return `<a class="card folder" href="/snapshots?system=${system}&session=${s.id}">
@@ -142,7 +142,7 @@ fastify.get('/snapshots', { preHandler: requireSession }, async (request, reply)
     const stat = fs.statSync(path.join(sessionDir, f));
     const sizeKb = (stat.size / 1024).toFixed(1);
     const ts = f.replace(/\.\w+$/, '');
-    const date = new Date(parseInt(ts)).toLocaleString();
+    const date = new Date(parseInt(ts)).toLocaleString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     return `
       <div class="card">
         <a href="/snapshots/${system}/${session}/${f}" target="_blank">
