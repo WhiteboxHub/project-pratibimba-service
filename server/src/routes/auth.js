@@ -153,8 +153,9 @@ function registerAuthRoutes(fastify) {
     }
 
     let user = null;
+    let mysqlDb;
     try {
-      const mysqlDb = getPool();
+      mysqlDb = getPool();
       const [rows] = await mysqlDb.execute(
         'SELECT id, uname, passwd, status, enddate, role FROM authuser WHERE uname = ? LIMIT 1',
         [username.trim()]
